@@ -1,6 +1,9 @@
-# Data Files (Too large for GitHub)
-*.csv
-!placeholder.csv
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Data
+data/
 
 # Python
 __pycache__/
