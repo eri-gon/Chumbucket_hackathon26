@@ -121,3 +121,56 @@ Mean score dips align with known oceanographic events:
 | 2005 | Pacific warm anomaly | ~81 |
 | 2014–16 | "The Blob" marine heatwave + El Niño | ~78–76 |
 | 2020 | Warming anomaly | ~74 (lowest) |
+
+---
+
+## Column Reference
+
+Source: [CalCOFI Bottle Database](https://calcofi.org/data/oceanographic-data/bottle-database/)
+
+### Cast Table (cruise metadata)
+
+| Column | Units | Description |
+|---|---|---|
+| Cst_Cnt | — | Sequential cast number — **join key** with Bottle |
+| Sta_ID | — | Line and station designation |
+| Year | — | Calendar year |
+| Month | — | Calendar month |
+| Date | — | Month, day, year |
+| Lat_Dec | decimal degrees | Latitude |
+| Lon_Dec | decimal degrees | Longitude |
+| Bottom_D | meters | Seafloor depth |
+| Data_Type | — | Measurement type (PR, HY, 10, CT, MX) |
+| Ship_Name | — | Vessel name |
+| Wind_Spd | knots | Wind speed |
+| Wave_Ht | feet | Wave height |
+| Secchi | meters | Water clarity depth |
+
+### Bottle Table (measurements)
+
+| Column | Units | Description |
+|---|---|---|
+| Cst_Cnt | — | Cast number — **join key** with Cast |
+| Depthm | meters | Sample collection depth |
+| T_degC | °C | Water temperature |
+| T_qual | — | Temperature quality flag (8=suspect, 9=missing) |
+| Salnty | PSS-1978 | Salinity |
+| S_qual | — | Salinity quality flag |
+| O2ml_L | ml/L | Dissolved oxygen concentration |
+| O_qual | — | Oxygen quality flag (8=suspect, 9=missing) |
+| O2Sat | % | Oxygen saturation |
+| ChlorA | µg/L | Chlorophyll-a — photosynthetic pigment concentration |
+| Chlqua | — | Chlorophyll quality flag |
+| Phaeop | µg/L | Phaeopigment (degraded chlorophyll) |
+| NO3uM | µmol/L | Nitrate concentration |
+| NO3q | — | Nitrate quality flag |
+| NO2uM | µmol/L | Nitrite concentration |
+| PO4uM | µmol/L | Phosphate concentration |
+| PO4q | — | Phosphate quality flag |
+| SiO3uM | µmol/L | Silicate concentration |
+| NH3uM | µmol/L | Ammonia concentration |
+| pH1 | pH | Seawater acidity (sparse — only 84 non-null rows, 2014–2015 only) |
+| pH2 | pH | pH replicate |
+| DIC1 | µmol/kg | Dissolved inorganic carbon |
+| TA1 | µmol/kg | Total alkalinity |
+| STheta | kg/m³ | Potential density anomaly |

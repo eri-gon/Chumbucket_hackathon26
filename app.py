@@ -185,6 +185,17 @@ with col_ts:
 
 # --- Bottom table ---
 with st.expander("View station data for selected year"):
+    st.markdown("""
+| Column | Units | Description |
+|---|---|---|
+| Sta_ID | — | CalCOFI line and station ID |
+| Lat_Dec | decimal degrees | Station latitude |
+| Lon_Dec | decimal degrees | Station longitude |
+| T_degC | °C | Mean sea surface temperature (0–50m) |
+| O2ml_L | ml/L | Mean dissolved oxygen concentration (0–50m) |
+| ChlorA | µg/L | Mean chlorophyll-a concentration (0–50m) |
+| health_score | 0–100 | Ocean Health Score vs 1949–1990 baseline |
+""")
     st.dataframe(
         year_df[["Sta_ID", "Lat_Dec", "Lon_Dec", "T_degC", "O2ml_L", "ChlorA", "health_score"]]
         .sort_values("health_score")
