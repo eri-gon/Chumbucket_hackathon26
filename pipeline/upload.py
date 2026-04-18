@@ -42,16 +42,30 @@ def create_bucket(s3, bucket, region):
         )
         print("Bucket created.")
 
-    # Disable block public access so we can set public-read ACLs
+    # Allow public bucket policy (ACLs are disabled on new buckets since 2023)
     s3.put_public_access_block(
         Bucket=bucket,
         PublicAccessBlockConfiguration={
-            "BlockPublicAcls": False,
-            "IgnorePublicAcls": False,
+            "BlockPublicAcls": True,
+            "IgnorePublicAcls": True,
             "BlockPublicPolicy": False,
             "RestrictPublicBuckets": False,
         },
     )
+
+    # Bucket policy granting public read on processed/*
+    import json
+    policy = json.dumps({
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Sid": "PublicReadProcessed",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": f"arn:aws:s3:::{bucket}/processed/*",
+        }],
+    })
+    s3.put_bucket_policy(Bucket=bucket, Policy=policy)
 
 
 def upload_files(s3, bucket, processed_dir, files):
@@ -61,12 +75,7 @@ def upload_files(s3, bucket, processed_dir, files):
         local_path = os.path.join(processed_dir, fname)
         s3_key = f"processed/{fname}"
         print(f"Uploading {fname}...")
-        s3.upload_file(
-            local_path,
-            bucket,
-            s3_key,
-            ExtraArgs={"ACL": "public-read"},
-        )
+        s3.upload_file(local_path, bucket, s3_key)
         print(f"  → {base_url}/{s3_key}")
     print("\nDone. Paste these URLs into app.py DATA_URLS.")
 

@@ -18,12 +18,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-DATA_PATH = "data/processed/"
+S3_BASE = "https://datahacks26-ocean-health.s3.us-west-2.amazonaws.com/processed"
+LOCAL_BASE = "data/processed"
 
 @st.cache_data
 def load_data():
-    scores = pd.read_parquet(DATA_PATH + "scores.parquet")
-    annual = pd.read_parquet(DATA_PATH + "annual_means.parquet")
+    try:
+        scores = pd.read_parquet(f"{S3_BASE}/scores.parquet")
+        annual = pd.read_parquet(f"{S3_BASE}/annual_means.parquet")
+    except Exception:
+        scores = pd.read_parquet(f"{LOCAL_BASE}/scores.parquet")
+        annual = pd.read_parquet(f"{LOCAL_BASE}/annual_means.parquet")
     return scores, annual
 
 scores_df, annual_df = load_data()
