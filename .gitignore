@@ -1,0 +1,17 @@
+# Data Files (Too large for GitHub)
+*.csv
+!placeholder.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Streamlit
+.streamlit/
+
+# IDEs
+.vscode/
+.idea/
