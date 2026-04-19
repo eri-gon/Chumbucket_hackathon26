@@ -1,17 +1,7 @@
-import { useEffect } from "react";
-import { queryData } from "./services/api";
+import Home from "./pages/Home";
 
 function App() {
-    useEffect(() => {
-        queryData({
-            metric: "temperature",
-            depth: 10,
-        }).then((data) => {
-            console.log("API response:", data);
-        });
-    }, []);
-
-    return <div>Check console for API response</div>;
+    return <Home />;
 }
 
 export default App;
