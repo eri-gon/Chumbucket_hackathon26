@@ -30,8 +30,8 @@ flowchart LR
 | Layer | Location | Role |
 | --- | --- | --- |
 | Frontend | `frontend/` | Single-page app; calls the API with `VITE_API_URL`. |
-| API | `infrastructure/template.yaml` | SAM-defined API Gateway stage `Prod` and Lambda integrations. |
-| Query service | `backend/hello_world/app.py` | `POST /query` runs **`SELECT * … bottle_table LIMIT 10`** via **boto3** + Athena. Glue database from **`AthenaDatabase`** (default **`default`**). |
+| API | `calcofi-dashboard/template.yaml` | SAM-defined API Gateway stage `Prod` and Lambda integrations. |
+| Query service | `backend/hello_world/app.py` | `POST /query` runs **`SELECT * … LIMIT 10`** on **`AthenaTable`** via **boto3** + Athena. Glue database from **`AthenaDatabase`** (default **`default`**). |
 | Preprocess service | `backend/functions/preprocessData/` | Placeholder endpoint for batch or ETL triggers. |
 | Data definitions | `data/schemas/`, `data/queries/`, `data/sample_data/` | Glue/Athena DDL, ad hoc SQL for debugging, sample CSV for demos. |
 
@@ -39,11 +39,11 @@ flowchart LR
 
 1. The browser sends `POST {ApiEndpoint}/query` with a JSON body (optional `metric`, `depth`).
 2. API Gateway forwards the request to the query Lambda (`app.lambda_handler`).
-3. The Lambda runs **`SELECT *` from `bottle_table` with `LIMIT 10`** in the configured Glue database (default **`default`**), writes Athena results under `s3://your-calcofi-bucket/athena-results/`, and returns row JSON.
+3. The Lambda runs **`SELECT *` from the configured table with `LIMIT 10`** in the configured Glue database (default **`default`**), writes Athena results under your **`AthenaOutputLocation`**, and returns row JSON.
 
 ## Deployment shape
 
-- **Backend:** `sam build` / `sam deploy` using `infrastructure/template.yaml` (see `scripts/deploy_backend.sh`).
+- **Backend:** `sam build` / `sam deploy` from `calcofi-dashboard/` using `calcofi-dashboard/template.yaml` (see `scripts/deploy_backend.sh`).
 - **Frontend:** static files built with Vite and synced to an S3 bucket (see `scripts/deploy_frontend.sh`); optionally fronted by CloudFront.
 - **Data:** sample CSV uploaded to S3 with `scripts/seed_data.sh`; the Athena external table `LOCATION` must match that prefix.
 

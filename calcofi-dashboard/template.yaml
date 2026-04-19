@@ -1,6 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: calcofi-dashboard — minimal SAM API
+Description: calcofi-dashboard — SAM API (GET /hello, POST /query Athena, POST /preprocess)
+
+Parameters:
+  AthenaDatabase:
+    Type: String
+    Description: Glue/Athena database that contains bottle_table and cast_table (AWS built-in default is "default")
+    Default: 'default'
+  AthenaOutputLocation:
+    Type: String
+    Description: S3 path where Athena writes query results (bucket/prefix must exist)
+    Default: 's3://your-calcofi-bucket/athena-results/'
+  AthenaTable:
+    Type: String
+    Description: Glue table name for minimal preview (same as ATHENA_TABLE in scripts/athena_minimal_query.py)
+    Default: 'bottle_table'
 
 Globals:
   Function:
@@ -23,7 +37,93 @@ Resources:
             Path: /hello
             Method: get
 
+  QueryFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: python3.11
+      BuildProperties:
+        RequirementsFile: requirements.txt
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-query'
+      CodeUri: ../backend/hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 60
+      MemorySize: 512
+      Architectures:
+        - x86_64
+      Description: CalCOFI query API via Athena
+      Environment:
+        Variables:
+          ATHENA_DATABASE: !Ref AthenaDatabase
+          ATHENA_TABLE: !Ref AthenaTable
+          ATHENA_WORKGROUP: primary
+          ATHENA_OUTPUT_LOCATION: !Ref AthenaOutputLocation
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:StopQueryExecution
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:GetBucketLocation
+                - s3:AbortMultipartUpload
+                - s3:ListMultipartUploadParts
+                - s3:ListBucketMultipartUploads
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetTable
+                - glue:GetPartitions
+              Resource: '*'
+      Events:
+        QueryAPI:
+          Type: Api
+          Properties:
+            Path: /query
+            Method: post
+        QueryOptions:
+          Type: Api
+          Properties:
+            Path: /query
+            Method: options
+
+  PreprocessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-preprocess-data'
+      CodeUri: ../backend/functions/preprocessData/
+      Handler: handler.handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 512
+      Architectures:
+        - x86_64
+      Description: Trigger CalCOFI preprocessing jobs
+      Events:
+        PreprocessApi:
+          Type: Api
+          Properties:
+            Path: /preprocess
+            Method: post
+        PreprocessOptions:
+          Type: Api
+          Properties:
+            Path: /preprocess
+            Method: options
+
 Outputs:
+  ApiEndpoint:
+    Description: Base URL for the REST API (set VITE_API_URL to this value; frontend calls POST /query)
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/"

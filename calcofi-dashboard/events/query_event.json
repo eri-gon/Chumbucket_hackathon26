@@ -42,6 +42,6 @@
     "domainName": "example.execute-api.us-east-1.amazonaws.com",
     "apiId": "example"
   },
-  "body": "{\"metric\":\"temperature\",\"depth\":10,\"startDate\":\"2023-01-01\",\"endDate\":\"2023-12-31\"}",
+  "body": "{\"limit\":50,\"columns\":[\"cst_cnt\",\"btl_cnt\",\"depthm\",\"t_degc\",\"salnty\"],\"filters\":[{\"column\":\"depthm\",\"op\":\"<=\",\"value\":100},{\"column\":\"t_degc\",\"op\":\">\",\"value\":0}],\"orderBy\":{\"column\":\"depthm\",\"direction\":\"ASC\"}}",
   "isBase64Encoded": false
 }

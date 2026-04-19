@@ -5,7 +5,7 @@ End-to-end setup for developers and demo environments: tooling, configuration, d
 ## Prerequisites
 
 - **Node.js** (current LTS) and npm — for `frontend/`.
-- **Python 3.11** — matches Lambda runtime in `infrastructure/template.yaml`.
+- **Python 3.11** — matches the query Lambda runtime in `calcofi-dashboard/template.yaml`.
 - **AWS CLI** v2, configured with credentials (`aws sts get-caller-identity` works).
 - **AWS SAM CLI** — for `sam build` and `sam deploy` ([Installing the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)).
 
@@ -13,7 +13,8 @@ End-to-end setup for developers and demo environments: tooling, configuration, d
 
 - `frontend/` — Vite + React app.
 - `backend/functions/` — Lambda source per function.
-- `infrastructure/` — `template.yaml`, `deploy.sh`, `events/` for local invoke.
+- `calcofi-dashboard/` — SAM `template.yaml`, `samconfig.toml`, `events/` (e.g. `query_event.json` for local invoke).
+- `infrastructure/` — legacy `deploy.sh` wrapper only (forwards to `scripts/deploy_backend.sh`).
 - `data/` — Athena DDL (`data/schemas/calcofi_schema.sql`), sample queries, sample CSV.
 - `scripts/` — `deploy_frontend.sh`, `deploy_backend.sh`, `seed_data.sh`.
 
@@ -33,12 +34,11 @@ chmod +x scripts/deploy_backend.sh infrastructure/deploy.sh
 
 Environment variables (optional):
 
-- `STACK_NAME` — defaults to `chumbucket-api`.
-- `AWS_REGION` or `AWS_DEFAULT_REGION` — defaults to `us-east-1` in `infrastructure/deploy.sh`.
-- `SAM_PARAMETER_OVERRIDES` — optional. The template defaults **`AthenaDatabase`** to **`default`** (AWS’s built-in Glue catalog database) and **`AthenaOutputLocation`** to **`s3://your-calcofi-bucket/athena-results/`**. Override if your tables live in another database or bucket:
+- **Stack name and region** — taken from **`calcofi-dashboard/samconfig.toml`** when you run `sam deploy` (default stack **`calcofi-dashboard`**, **`us-west-1`**). Override with `sam deploy --stack-name … --region …` if needed.
+- `SAM_PARAMETER_OVERRIDES` — optional. The template defaults **`AthenaDatabase`** to **`default`**, **`AthenaTable`** to **`bottle_table`**, and **`AthenaOutputLocation`** to **`s3://your-calcofi-bucket/athena-results/`**. Override if your tables live in another database or bucket:
 
   ```bash
-  export SAM_PARAMETER_OVERRIDES='AthenaDatabase=my_glue_db AthenaOutputLocation=s3://your-calcofi-bucket/athena-results/'
+  export SAM_PARAMETER_OVERRIDES='AthenaDatabase=my_glue_db AthenaTable=bottle_table AthenaOutputLocation=s3://your-calcofi-bucket/athena-results/'
   ./scripts/deploy_backend.sh
   ```
 
@@ -91,15 +91,15 @@ npm run dev
 
 ## Local Lambda invoke (optional)
 
-With SAM CLI, from repo root after `sam build`:
+With SAM CLI, from **`calcofi-dashboard/`** after **`sam build`**:
 
 ```bash
-sam local invoke QueryFunction \
-  --template-file infrastructure/template.yaml \
-  --event infrastructure/events/api_events.json
+cd calcofi-dashboard
+sam build
+sam local invoke QueryFunction --event events/query_event.json
 ```
 
-Ensure the template path matches your build; for deploy, the project uses `.aws-sam/build/template.yaml` after `sam build`.
+For deploy, SAM uses **`calcofi-dashboard/.aws-sam/build/template.yaml`** after **`sam build`**.
 
 ## Test deployed `POST /query` (Lambda → Athena)
 
