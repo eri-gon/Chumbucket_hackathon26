@@ -62,6 +62,8 @@ st.sidebar.markdown(
     "and chlorophyll-a against its own 1949–1990 baseline using z-scores. "
     "100 = pristine baseline conditions."
 )
+st.sidebar.markdown("---")
+st.sidebar.markdown("[🔧 Backend Architecture](https://eri-gon.github.io/Chumbucket_hackathon26/)")
 
 # --- Filter data to year range ---
 if view_mode == "Annual":
