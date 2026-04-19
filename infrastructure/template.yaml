@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CalCOFI API — Athena query and data preprocessing Lambdas behind API Gateway
+
+Parameters:
+  AthenaOutputLocation:
+    Type: String
+    Description: S3 path where Athena writes query results (must exist; e.g. s3://your-calcofi-bucket/athena-results/)
+    Default: ''
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.11
+    Architectures:
+      - x86_64
+  Api:
+    Cors:
+      AllowMethods: "'POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'"
+      AllowOrigin: "'*'"
+
+Resources:
+  QueryFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: python3.11
+      BuildProperties:
+        RequirementsFile: requirements.txt
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-query'
+      CodeUri: ../backend/hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 60
+      Description: CalCOFI query API via Athena
+      Environment:
+        Variables:
+          ATHENA_DATABASE: calcofi_db
+          ATHENA_WORKGROUP: primary
+          ATHENA_OUTPUT_LOCATION: !Ref AthenaOutputLocation
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:StopQueryExecution
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:GetBucketLocation
+                - s3:AbortMultipartUpload
+                - s3:ListMultipartUploadParts
+                - s3:ListBucketMultipartUploads
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetTable
+                - glue:GetPartitions
+              Resource: '*'
+      Events:
+        QueryAPI:
+          Type: Api
+          Properties:
+            Path: /query
+            Method: post
+
+  PreprocessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-preprocess-data'
+      CodeUri: ../backend/functions/preprocessData/
+      Handler: handler.handler
+      Description: Trigger CalCOFI preprocessing jobs
+      Events:
+        PreprocessApi:
+          Type: Api
+          Properties:
+            Path: /preprocess
+            Method: post
+
+Outputs:
+  ApiEndpoint:
+    Description: Base URL for the REST API (set VITE_API_URL to this value; frontend calls POST /query)
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'

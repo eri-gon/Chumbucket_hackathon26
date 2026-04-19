@@ -1,0 +1,47 @@
+{
+  "resource": "/query",
+  "path": "/query",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "multiValueHeaders": {
+    "Content-Type": ["application/json"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "example",
+    "resourcePath": "/query",
+    "httpMethod": "POST",
+    "extendedRequestId": "example",
+    "requestTime": "18/Apr/2026:00:00:00 +0000",
+    "path": "/Prod/query",
+    "accountId": "123456789012",
+    "protocol": "HTTP/1.1",
+    "stage": "Prod",
+    "domainPrefix": "example",
+    "requestTimeEpoch": 1713398400000,
+    "requestId": "00000000-0000-0000-0000-000000000000",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "127.0.0.1",
+      "principalOrgId": null,
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": null,
+      "userAgent": "sam-local",
+      "user": null
+    },
+    "domainName": "example.execute-api.us-east-1.amazonaws.com",
+    "apiId": "example"
+  },
+  "body": "{\"metric\":\"temperature\",\"depth\":10,\"startDate\":\"2023-01-01\",\"endDate\":\"2023-12-31\"}",
+  "isBase64Encoded": false
+}
