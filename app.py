@@ -21,21 +21,27 @@ st.markdown("""
 S3_BASE = "https://datahacks26-ocean-health.s3.us-west-2.amazonaws.com/processed"
 LOCAL_BASE = "data/processed"
 
+SEASON_ORDER = ["Spring", "Summer", "Fall", "Winter"]
+
 @st.cache_data
 def load_data():
     try:
-        scores = pd.read_parquet(f"{S3_BASE}/scores.parquet")
-        annual = pd.read_parquet(f"{S3_BASE}/annual_means.parquet")
+        scores   = pd.read_parquet(f"{S3_BASE}/scores.parquet")
+        annual   = pd.read_parquet(f"{S3_BASE}/annual_means.parquet")
+        seasonal = pd.read_parquet(f"{S3_BASE}/seasonal_scores.parquet")
     except Exception:
-        scores = pd.read_parquet(f"{LOCAL_BASE}/scores.parquet")
-        annual = pd.read_parquet(f"{LOCAL_BASE}/annual_means.parquet")
-    return scores, annual
+        scores   = pd.read_parquet(f"{LOCAL_BASE}/scores.parquet")
+        annual   = pd.read_parquet(f"{LOCAL_BASE}/annual_means.parquet")
+        seasonal = pd.read_parquet(f"{LOCAL_BASE}/seasonal_scores.parquet")
+    return scores, annual, seasonal
 
-scores_df, annual_df = load_data()
+scores_df, annual_df, seasonal_df = load_data()
 
 # --- Sidebar ---
 st.sidebar.title("🌊 Ocean Health Dashboard")
 st.sidebar.markdown("CalCOFI data · California Coast · 1991–2021")
+
+view_mode = st.sidebar.radio("View by", ["Annual", "Seasonal"])
 
 year = st.sidebar.slider(
     "Year",
@@ -44,6 +50,9 @@ year = st.sidebar.slider(
     2010,
 )
 
+if view_mode == "Seasonal":
+    season = st.sidebar.selectbox("Season", SEASON_ORDER)
+
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "**Health Score** compares each station's temperature, dissolved oxygen, "
@@ -51,19 +60,34 @@ st.sidebar.markdown(
     "100 = pristine baseline conditions."
 )
 
-# --- Filter to selected year ---
-year_df = scores_df[scores_df["Year"] == year].copy()
+# --- Filter data ---
+if view_mode == "Annual":
+    year_df = scores_df[scores_df["Year"] == year].copy()
+    map_title = f"Station Health Scores — {year}"
+    ts_label = "Mean Health Score Over Time (Annual)"
+    yearly_mean = (scores_df.groupby("Year")["health_score"]
+                   .mean().reset_index()
+                   .rename(columns={"health_score": "Mean Health Score"}))
+else:
+    year_df = seasonal_df[(seasonal_df["Year"] == year) &
+                          (seasonal_df["Season"] == season)].copy()
+    map_title = f"Station Health Scores — {season} {year}"
+    ts_label = f"Mean Health Score Over Time ({season})"
+    yearly_mean = (seasonal_df[seasonal_df["Season"] == season]
+                   .groupby("Year")["health_score"]
+                   .mean().reset_index()
+                   .rename(columns={"health_score": "Mean Health Score"}))
 
 # --- Header ---
 st.title("Ocean Health Score Dashboard")
-st.markdown(f"Showing **{len(year_df)}** CalCOFI stations · Year **{year}**")
+st.markdown(f"Showing **{len(year_df)}** CalCOFI stations · **{map_title}**")
 
 # --- Top metrics ---
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Stations", len(year_df))
-m2.metric("Avg Health Score", f"{year_df['health_score'].mean():.1f}")
-m3.metric("Worst Station", f"{year_df['health_score'].min():.1f}")
-m4.metric("Best Station", f"{year_df['health_score'].max():.1f}")
+m2.metric("Avg Health Score", f"{year_df['health_score'].mean():.1f}" if len(year_df) else "—")
+m3.metric("Worst Station", f"{year_df['health_score'].min():.1f}" if len(year_df) else "—")
+m4.metric("Best Station", f"{year_df['health_score'].max():.1f}" if len(year_df) else "—")
 
 st.markdown("---")
 
@@ -71,52 +95,47 @@ st.markdown("---")
 col_map, col_ts = st.columns([6, 4])
 
 with col_map:
-    st.subheader(f"Station Health Scores — {year}")
+    st.subheader(map_title)
 
-    fig_map = px.scatter_mapbox(
-        year_df,
-        lat="Lat_Dec",
-        lon="Lon_Dec",
-        color="health_score",
-        hover_name="Sta_ID",
-        hover_data={
-            "health_score": ":.1f",
-            "T_degC": ":.2f",
-            "O2ml_L": ":.2f",
-            "ChlorA": ":.3f",
-            "Lat_Dec": False,
-            "Lon_Dec": False,
-        },
-        color_continuous_scale=[
-            [0.0, "#d73027"],
-            [0.4, "#fc8d59"],
-            [0.6, "#fee08b"],
-            [0.8, "#91cf60"],
-            [1.0, "#1a9850"],
-        ],
-        range_color=[0, 100],
-        zoom=5,
-        center={"lat": 33.5, "lon": -120.5},
-        height=550,
-        mapbox_style="carto-darkmatter",
-        size_max=14,
-    )
-    fig_map.update_traces(marker=dict(size=12, opacity=0.85))
-    fig_map.update_layout(
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-        coloraxis_colorbar=dict(title="Health Score"),
-    )
-    st.plotly_chart(fig_map, use_container_width=True)
+    if len(year_df):
+        fig_map = px.scatter_mapbox(
+            year_df,
+            lat="Lat_Dec",
+            lon="Lon_Dec",
+            color="health_score",
+            hover_name="Sta_ID",
+            hover_data={
+                "health_score": ":.1f",
+                "T_degC": ":.2f",
+                "O2ml_L": ":.2f",
+                "ChlorA": ":.3f",
+                "Lat_Dec": False,
+                "Lon_Dec": False,
+            },
+            color_continuous_scale=[
+                [0.0, "#d73027"],
+                [0.4, "#fc8d59"],
+                [0.6, "#fee08b"],
+                [0.8, "#91cf60"],
+                [1.0, "#1a9850"],
+            ],
+            range_color=[0, 100],
+            zoom=5,
+            center={"lat": 33.5, "lon": -120.5},
+            height=550,
+            mapbox_style="carto-darkmatter",
+        )
+        fig_map.update_traces(marker=dict(size=12, opacity=0.85))
+        fig_map.update_layout(
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            coloraxis_colorbar=dict(title="Health Score"),
+        )
+        st.plotly_chart(fig_map, use_container_width=True)
+    else:
+        st.info("No data for this season/year combination.")
 
 with col_ts:
-    st.subheader("Mean Health Score Over Time")
-
-    yearly_mean = (
-        scores_df.groupby("Year")["health_score"]
-        .mean()
-        .reset_index()
-        .rename(columns={"health_score": "Mean Health Score"})
-    )
+    st.subheader(ts_label)
 
     fig_ts = go.Figure()
     fig_ts.add_trace(go.Scatter(
@@ -125,11 +144,9 @@ with col_ts:
         mode="lines+markers",
         line=dict(color="#58a6ff", width=2),
         marker=dict(size=5),
-        name="Mean Score",
     ))
     fig_ts.add_vline(x=year, line_dash="dash", line_color="#ff6b6b", line_width=1.5)
 
-    # Annotate known events
     events = {1998: "El Niño", 2005: "Warm Anomaly", 2015: "The Blob"}
     for yr, label in events.items():
         if yr in yearly_mean["Year"].values:

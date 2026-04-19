@@ -11,6 +11,7 @@ FILES = [
     "scores.parquet",
     "annual_means.parquet",
     "baseline_stats.parquet",
+    "seasonal_scores.parquet",
 ]
 
 
@@ -82,7 +83,7 @@ def upload_files(s3, bucket, processed_dir, files):
         print(f"Uploading {fname}...")
         s3.upload_file(local_path, bucket, s3_key)
         print(f"  → {base_url}/{s3_key}")
-    print("\nDone. Paste these URLs into app.py DATA_URLS.")
+    print("\nDone. Files are live on S3.")
 
 
 if __name__ == "__main__":
