@@ -84,6 +84,9 @@ yearly_mean = (
 
 # --- Header ---
 st.title("Ocean Health Score Dashboard")
+st.markdown("""
+The California Cooperative Oceanic Fisheries Investigations (CalCOFI) dataset provides decades of oceanographic measurements from the California coast. This app lets you explore temperature, salinity, and spatial trends across time—revealing how marine environments change and evolve.
+""")
 label = f"{source_label} · {start_year}–{end_year}"
 st.markdown(f"**{label}** · {range_df['Sta_ID'].nunique()} stations · {len(range_df):,} observations")
 
