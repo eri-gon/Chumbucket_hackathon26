@@ -347,7 +347,7 @@ export default function Home() {
                                 </button>
                             </div>
                             <div className="column-grid">
-                                {ATHENA_ALLOWED_COLUMNS.map((c) => (
+                                {ATHENA_ALLOWED_COLUMNS.map((c: AthenaAllowlistedColumn) => (
                                     <label key={c} className="column-chip">
                                         <input
                                             type="checkbox"
@@ -383,7 +383,7 @@ export default function Home() {
                                         }
                                     >
                                         <option value="">Column…</option>
-                                        {ATHENA_ALLOWED_COLUMNS.map((c) => (
+                                        {ATHENA_ALLOWED_COLUMNS.map((c: AthenaAllowlistedColumn) => (
                                             <option key={c} value={c}>
                                                 {c}
                                             </option>
@@ -395,7 +395,7 @@ export default function Home() {
                                             updateFilterRow(row.key, { op: e.target.value as AthenaFilterOp })
                                         }
                                     >
-                                        {ATHENA_ALLOWED_OPS.map((op) => (
+                                        {ATHENA_ALLOWED_OPS.map((op: AthenaFilterOp) => (
                                             <option key={op} value={op}>
                                                 {op}
                                             </option>
@@ -451,7 +451,7 @@ export default function Home() {
                                             }
                                         >
                                             <option value="">Choose…</option>
-                                            {ATHENA_ALLOWED_COLUMNS.map((c) => (
+                                            {ATHENA_ALLOWED_COLUMNS.map((c: AthenaAllowlistedColumn) => (
                                                 <option key={c} value={c}>
                                                     {c}
                                                 </option>
