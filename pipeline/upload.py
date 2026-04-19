@@ -34,7 +34,12 @@ def create_bucket(s3, bucket, region):
     try:
         s3.head_bucket(Bucket=bucket)
         print(f"Bucket '{bucket}' already exists.")
-    except ClientError:
+        return
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code in ("403", "Forbidden"):
+            print(f"Bucket '{bucket}' exists (no list permission — skipping setup).")
+            return  # bucket + policy already configured from initial setup
         print(f"Creating bucket '{bucket}' in {region}...")
         s3.create_bucket(
             Bucket=bucket,
