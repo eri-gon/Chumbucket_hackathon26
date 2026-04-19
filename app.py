@@ -20,8 +20,11 @@ st.markdown("""
 
 S3_BASE = "https://datahacks26-ocean-health.s3.us-west-2.amazonaws.com/processed"
 LOCAL_BASE = "data/processed"
-
 SEASON_ORDER = ["Spring", "Summer", "Fall", "Winter"]
+HEALTH_COLORSCALE = [
+    [0.0, "#d73027"], [0.4, "#fc8d59"], [0.6, "#fee08b"],
+    [0.8, "#91cf60"], [1.0, "#1a9850"],
+]
 
 @st.cache_data
 def load_data():
@@ -36,6 +39,7 @@ def load_data():
     return scores, annual, seasonal
 
 scores_df, annual_df, seasonal_df = load_data()
+all_years = sorted(scores_df["Year"].unique().tolist())
 
 # --- Sidebar ---
 st.sidebar.title("🌊 Ocean Health Dashboard")
@@ -43,11 +47,10 @@ st.sidebar.markdown("CalCOFI data · California Coast · 1991–2021")
 
 view_mode = st.sidebar.radio("View by", ["Annual", "Seasonal"])
 
-year = st.sidebar.slider(
-    "Year",
-    int(scores_df["Year"].min()),
-    int(scores_df["Year"].max()),
-    2010,
+start_year, end_year = st.sidebar.select_slider(
+    "Year range",
+    options=all_years,
+    value=(all_years[0], all_years[-1]),
 )
 
 if view_mode == "Seasonal":
@@ -60,49 +63,52 @@ st.sidebar.markdown(
     "100 = pristine baseline conditions."
 )
 
-# --- Filter data ---
+# --- Filter data to year range ---
 if view_mode == "Annual":
-    year_df = scores_df[scores_df["Year"] == year].copy()
-    map_title = f"Station Health Scores — {year}"
-    ts_label = "Mean Health Score Over Time (Annual)"
-    yearly_mean = (scores_df.groupby("Year")["health_score"]
-                   .mean().reset_index()
-                   .rename(columns={"health_score": "Mean Health Score"}))
+    base_df = scores_df
+    source_label = "Annual"
 else:
-    year_df = seasonal_df[(seasonal_df["Year"] == year) &
-                          (seasonal_df["Season"] == season)].copy()
-    map_title = f"Station Health Scores — {season} {year}"
-    ts_label = f"Mean Health Score Over Time ({season})"
-    yearly_mean = (seasonal_df[seasonal_df["Season"] == season]
-                   .groupby("Year")["health_score"]
-                   .mean().reset_index()
-                   .rename(columns={"health_score": "Mean Health Score"}))
+    base_df = seasonal_df[seasonal_df["Season"] == season]
+    source_label = season
+
+range_df = base_df[
+    (base_df["Year"] >= start_year) & (base_df["Year"] <= end_year)
+].sort_values("Year")
+
+yearly_mean = (
+    range_df.groupby("Year")["health_score"]
+    .mean()
+    .reset_index()
+    .rename(columns={"health_score": "Mean Health Score"})
+)
 
 # --- Header ---
 st.title("Ocean Health Score Dashboard")
-st.markdown(f"Showing **{len(year_df)}** CalCOFI stations · **{map_title}**")
+label = f"{source_label} · {start_year}–{end_year}"
+st.markdown(f"**{label}** · {range_df['Sta_ID'].nunique()} stations · {len(range_df):,} observations")
 
-# --- Top metrics ---
+# --- Top metrics (across selected range) ---
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("Stations", len(year_df))
-m2.metric("Avg Health Score", f"{year_df['health_score'].mean():.1f}" if len(year_df) else "—")
-m3.metric("Worst Station", f"{year_df['health_score'].min():.1f}" if len(year_df) else "—")
-m4.metric("Best Station", f"{year_df['health_score'].max():.1f}" if len(year_df) else "—")
+m1.metric("Stations", range_df["Sta_ID"].nunique())
+m2.metric("Avg Health Score", f"{range_df['health_score'].mean():.1f}" if len(range_df) else "—")
+m3.metric("Worst Score", f"{range_df['health_score'].min():.1f}" if len(range_df) else "—")
+m4.metric("Best Score", f"{range_df['health_score'].max():.1f}" if len(range_df) else "—")
 
 st.markdown("---")
 
-# --- Map + time series layout ---
 col_map, col_ts = st.columns([6, 4])
 
+# --- Animated map ---
 with col_map:
-    st.subheader(map_title)
+    st.subheader(f"Station Health Scores — {source_label} (press ▶ to animate)")
 
-    if len(year_df):
+    if len(range_df):
         fig_map = px.scatter_mapbox(
-            year_df,
+            range_df,
             lat="Lat_Dec",
             lon="Lon_Dec",
             color="health_score",
+            animation_frame="Year",
             hover_name="Sta_ID",
             hover_data={
                 "health_score": ":.1f",
@@ -111,18 +117,13 @@ with col_map:
                 "ChlorA": ":.3f",
                 "Lat_Dec": False,
                 "Lon_Dec": False,
+                "Year": False,
             },
-            color_continuous_scale=[
-                [0.0, "#d73027"],
-                [0.4, "#fc8d59"],
-                [0.6, "#fee08b"],
-                [0.8, "#91cf60"],
-                [1.0, "#1a9850"],
-            ],
+            color_continuous_scale=HEALTH_COLORSCALE,
             range_color=[0, 100],
             zoom=5,
             center={"lat": 33.5, "lon": -120.5},
-            height=550,
+            height=560,
             mapbox_style="carto-darkmatter",
         )
         fig_map.update_traces(marker=dict(size=12, opacity=0.85))
@@ -132,10 +133,13 @@ with col_map:
         )
         st.plotly_chart(fig_map, use_container_width=True)
     else:
-        st.info("No data for this season/year combination.")
+        st.info("No data for this selection.")
 
+# --- Animated time series + station drill-down ---
 with col_ts:
-    st.subheader(ts_label)
+    st.subheader("Mean Health Score Over Time")
+
+    events = {1998: "El Niño", 2005: "Warm Anomaly", 2015: "The Blob"}
 
     fig_ts = go.Figure()
     fig_ts.add_trace(go.Scatter(
@@ -145,19 +149,15 @@ with col_ts:
         line=dict(color="#58a6ff", width=2),
         marker=dict(size=5),
     ))
-    fig_ts.add_vline(x=year, line_dash="dash", line_color="#ff6b6b", line_width=1.5)
-
-    events = {1998: "El Niño", 2005: "Warm Anomaly", 2015: "The Blob"}
-    for yr, label in events.items():
+    for yr, label_text in events.items():
         if yr in yearly_mean["Year"].values:
             fig_ts.add_annotation(
                 x=yr,
                 y=yearly_mean.loc[yearly_mean["Year"] == yr, "Mean Health Score"].values[0],
-                text=label, showarrow=True, arrowhead=2,
+                text=label_text, showarrow=True, arrowhead=2,
                 font=dict(size=9, color="#aaa"), arrowcolor="#aaa",
                 ax=30, ay=-30,
             )
-
     fig_ts.update_layout(
         template="plotly_dark",
         xaxis_title="Year",
@@ -169,15 +169,19 @@ with col_ts:
     )
     st.plotly_chart(fig_ts, use_container_width=True)
 
-    # --- Station drill-down ---
+    # --- Station drill-down (filtered to year range) ---
     st.subheader("Station Time Series")
     station_ids = sorted(scores_df["Sta_ID"].unique())
     selected_station = st.selectbox("Select a station", station_ids)
 
-    sta_data = annual_df[annual_df["Sta_ID"] == selected_station].sort_values("Year")
+    sta_data = (annual_df[
+        (annual_df["Sta_ID"] == selected_station) &
+        (annual_df["Year"] >= start_year) &
+        (annual_df["Year"] <= end_year)
+    ].sort_values("Year"))
 
-    for var, label, color in [
-        ("T_degC",  "Temperature (°C)",       "#ff6b6b"),
+    for var, var_label, color in [
+        ("T_degC",  "Temperature (°C)",        "#ff6b6b"),
         ("O2ml_L",  "Dissolved Oxygen (ml/L)", "#58a6ff"),
         ("ChlorA",  "Chlorophyll-a (µg/L)",    "#2ecc71"),
     ]:
@@ -193,7 +197,7 @@ with col_ts:
         fig_v.add_vline(x=1990, line_dash="dot", line_color="#888", line_width=1)
         fig_v.update_layout(
             template="plotly_dark",
-            title=dict(text=label, font=dict(size=12)),
+            title=dict(text=var_label, font=dict(size=12)),
             xaxis_title=None, yaxis_title=None,
             margin=dict(l=10, r=10, t=30, b=10),
             height=160,
@@ -201,7 +205,7 @@ with col_ts:
         st.plotly_chart(fig_v, use_container_width=True)
 
 # --- Bottom table ---
-with st.expander("View station data for selected year"):
+with st.expander("View station data for selected year range"):
     st.markdown("""
 | Column | Units | Description |
 |---|---|---|
@@ -214,8 +218,8 @@ with st.expander("View station data for selected year"):
 | health_score | 0–100 | Ocean Health Score vs 1949–1990 baseline |
 """)
     st.dataframe(
-        year_df[["Sta_ID", "Lat_Dec", "Lon_Dec", "T_degC", "O2ml_L", "ChlorA", "health_score"]]
-        .sort_values("health_score")
+        range_df[["Sta_ID", "Year", "Lat_Dec", "Lon_Dec", "T_degC", "O2ml_L", "ChlorA", "health_score"]]
+        .sort_values(["health_score", "Year"])
         .reset_index(drop=True),
         use_container_width=True,
     )
