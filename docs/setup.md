@@ -35,10 +35,10 @@ Environment variables (optional):
 
 - `STACK_NAME` — defaults to `chumbucket-api`.
 - `AWS_REGION` or `AWS_DEFAULT_REGION` — defaults to `us-east-1` in `infrastructure/deploy.sh`.
-- `SAM_PARAMETER_OVERRIDES` — pass CloudFormation parameters, for example Athena result location:
+- `SAM_PARAMETER_OVERRIDES` — optional. The template defaults **`AthenaDatabase`** to **`default`** (AWS’s built-in Glue catalog database) and **`AthenaOutputLocation`** to **`s3://your-calcofi-bucket/athena-results/`**. Override if your tables live in another database or bucket:
 
   ```bash
-  export SAM_PARAMETER_OVERRIDES='AthenaOutputLocation=s3://your-calcofi-bucket/athena-results/'
+  export SAM_PARAMETER_OVERRIDES='AthenaDatabase=my_glue_db AthenaOutputLocation=s3://your-calcofi-bucket/athena-results/'
   ./scripts/deploy_backend.sh
   ```
 
@@ -76,17 +76,17 @@ npm run dev
 
 ## Data: seed S3 and register Athena
 
-1. Create or choose an S3 bucket for CalCOFI-style CSV data.
-2. Upload the sample file so the prefix matches what you will put in the DDL:
+1. Use bucket **`your-calcofi-bucket`** (or set `DATA_S3_BUCKET` to the bucket name that matches your Glue `LOCATION`).
+2. Upload the sample file so the prefix matches `data/schemas/calcofi_schema.sql`:
 
    ```bash
-   export DATA_S3_BUCKET=your-data-bucket
-   export DATA_S3_PREFIX=calcofi/bottle_data/
+   export DATA_S3_BUCKET=your-calcofi-bucket
+   export DATA_S3_PREFIX=calcofi/bottle/
    chmod +x scripts/seed_data.sh
    ./scripts/seed_data.sh
    ```
 
-3. Edit `data/schemas/calcofi_schema.sql`: set `LOCATION` to your data prefix (for example `s3://your-calcofi-bucket/calcofi/bottle_data/`) so it matches where you upload CSVs (trailing slash as in AWS docs).
+3. Confirm `data/schemas/calcofi_schema.sql` **`LOCATION`** values: **`s3://your-calcofi-bucket/calcofi/cast/`** for `cast.csv` and **`s3://your-calcofi-bucket/calcofi/bottle/`** for `bottle.csv` (trailing slashes as in AWS docs).
 4. In the **Athena** console, run the statements in `data/schemas/calcofi_schema.sql`, then try queries from `data/queries/sample_queries.sql`.
 
 ## Local Lambda invoke (optional)
@@ -100,6 +100,29 @@ sam local invoke QueryFunction \
 ```
 
 Ensure the template path matches your build; for deploy, the project uses `.aws-sam/build/template.yaml` after `sam build`.
+
+## Test deployed `POST /query` (Lambda → Athena)
+
+From the **repo root**, with the same base URL as `frontend/.env` **`VITE_API_URL`** (no `/query` suffix), or set **`API_BASE_URL`**:
+
+```bash
+python scripts/test_query_api.py --metric temperature --depth 10
+```
+
+Or with **Node** (also used by the frontend npm script):
+
+```bash
+cd frontend
+npm run test:api
+```
+
+Override URL once:
+
+```bash
+node scripts/test-query-api.mjs --url https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com/Prod
+```
+
+Successful responses include **`success`**, **`data`** (Athena rows), and **`query`** (SQL string). Exit code is non-zero on HTTP errors or **`success: false`**.
 
 ## Troubleshooting
 

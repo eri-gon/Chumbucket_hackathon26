@@ -12,18 +12,18 @@ All paths below use JSON bodies and return JSON unless noted.
 
 ## `POST /query`
 
-Implemented by `backend/hello_world/app.py` (`lambda_handler`). It builds SQL for `calcofi_db.bottle_data`, runs it in **Amazon Athena** with **boto3**, and returns result rows as JSON.
+Implemented by `backend/hello_world/app.py` (`lambda_handler`). It runs **`SELECT * FROM …bottle_table LIMIT 10`** against the Glue database in **`ATHENA_DATABASE`** (SAM **`AthenaDatabase`**, default **`default`**) using **boto3**, and returns those rows as JSON. Request fields `metric` / `depth` / dates are accepted but not used for this preview.
 
-Deploy must set stack parameter **`AthenaOutputLocation`** (see `docs/setup.md`) so Athena can write results to S3.
+Stack parameter **`AthenaOutputLocation`** defaults to **`s3://your-calcofi-bucket/athena-results/`** (see `docs/setup.md`); override at deploy if needed.
 
 ### Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `metric` | string | No | Defaults to `temperature` (`t_degc`); `salinity` maps to `sal_psu`. |
-| `depth` | number | No | Defaults to `10`; adds `AND depth = …` to the SQL. |
-| `startDate` | string | No | Lower bound on `obs_date` (`YYYY-MM-DD`). |
-| `endDate` | string | No | Upper bound on `obs_date`. |
+| `metric` | string | No | Ignored for the current **`LIMIT 10`** preview (defaults to `temperature` in clients). |
+| `depth` | number | No | Ignored for the preview. |
+| `startDate` | string | No | Ignored for the preview. |
+| `endDate` | string | No | Ignored for the preview. |
 
 Example:
 
@@ -42,9 +42,9 @@ Example:
 {
   "success": true,
   "data": [
-    { "t_degc": 15.5, "depth": 10, "obs_date": "2019-04-15" }
+    { "cst_cnt": 1, "btl_cnt": 1, "depthm": 10.0, "t_degc": 12.3 }
   ],
-  "query": "SELECT t_degc, depth, obs_date FROM calcofi_db.bottle_data WHERE 1=1 ..."
+  "query": "SELECT * FROM default.bottle_table LIMIT 10"
 }
 ```
 

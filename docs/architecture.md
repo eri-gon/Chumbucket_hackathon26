@@ -31,7 +31,7 @@ flowchart LR
 | --- | --- | --- |
 | Frontend | `frontend/` | Single-page app; calls the API with `VITE_API_URL`. |
 | API | `infrastructure/template.yaml` | SAM-defined API Gateway stage `Prod` and Lambda integrations. |
-| Query service | `backend/hello_world/app.py` | `POST /query` runs SQL via **boto3** + Athena (`query_builder.py`). Requires `ATHENA_OUTPUT_LOCATION` from stack parameter `AthenaOutputLocation`. |
+| Query service | `backend/hello_world/app.py` | `POST /query` runs **`SELECT * … bottle_table LIMIT 10`** via **boto3** + Athena. Glue database from **`AthenaDatabase`** (default **`default`**). |
 | Preprocess service | `backend/functions/preprocessData/` | Placeholder endpoint for batch or ETL triggers. |
 | Data definitions | `data/schemas/`, `data/queries/`, `data/sample_data/` | Glue/Athena DDL, ad hoc SQL for debugging, sample CSV for demos. |
 
@@ -39,7 +39,7 @@ flowchart LR
 
 1. The browser sends `POST {ApiEndpoint}/query` with a JSON body (optional `metric`, `depth`).
 2. API Gateway forwards the request to the query Lambda (`app.lambda_handler`).
-3. The Lambda returns placeholder JSON. Later, this step will build SQL for `calcofi_db.bottle_data`, run Athena, and return query results.
+3. The Lambda runs **`SELECT *` from `bottle_table` with `LIMIT 10`** in the configured Glue database (default **`default`**), writes Athena results under `s3://your-calcofi-bucket/athena-results/`, and returns row JSON.
 
 ## Deployment shape
 

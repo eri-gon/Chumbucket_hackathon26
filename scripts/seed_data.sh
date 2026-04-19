@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Upload sample CSV to S3 so Athena external table LOCATION matches real data.
-# Required: DATA_S3_BUCKET
-# Optional: DATA_S3_PREFIX (default: calcofi/bottle_data/)
+# Required: DATA_S3_BUCKET (e.g. your-calcofi-bucket — same as calcofi_schema.sql LOCATION)
+# Optional: DATA_S3_PREFIX (default: calcofi/bottle/ — matches calcofi_schema.sql bottle LOCATION)
 # Optional: AWS_REGION
 set -euo pipefail
 
@@ -19,7 +19,7 @@ if [[ -z "${DATA_S3_BUCKET}" ]]; then
   exit 1
 fi
 
-DATA_S3_PREFIX="${DATA_S3_PREFIX:-calcofi/bottle_data/}"
+DATA_S3_PREFIX="${DATA_S3_PREFIX:-calcofi/bottle/}"
 # Normalize: ensure trailing slash, no leading slash on key body
 DATA_S3_PREFIX="${DATA_S3_PREFIX#/}"
 [[ "${DATA_S3_PREFIX}" == */ ]] || DATA_S3_PREFIX="${DATA_S3_PREFIX}/"

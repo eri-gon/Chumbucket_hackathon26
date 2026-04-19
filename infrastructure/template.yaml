@@ -3,10 +3,14 @@ Transform: AWS::Serverless-2016-10-31
 Description: CalCOFI API — Athena query and data preprocessing Lambdas behind API Gateway
 
 Parameters:
+  AthenaDatabase:
+    Type: String
+    Description: Glue/Athena database that contains bottle_table and cast_table (AWS built-in default is "default")
+    Default: 'default'
   AthenaOutputLocation:
     Type: String
-    Description: S3 path where Athena writes query results (must exist; e.g. s3://your-calcofi-bucket/athena-results/)
-    Default: ''
+    Description: S3 path where Athena writes query results (bucket/prefix must exist)
+    Default: 's3://your-calcofi-bucket/athena-results/'
 
 Globals:
   Function:
@@ -37,7 +41,7 @@ Resources:
       Description: CalCOFI query API via Athena
       Environment:
         Variables:
-          ATHENA_DATABASE: calcofi_db
+          ATHENA_DATABASE: !Ref AthenaDatabase
           ATHENA_WORKGROUP: primary
           ATHENA_OUTPUT_LOCATION: !Ref AthenaOutputLocation
       Policies:

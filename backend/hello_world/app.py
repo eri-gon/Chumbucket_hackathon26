@@ -69,7 +69,7 @@ def _rows_to_objects(athena_client, execution_id: str) -> List[Dict[str, Any]]:
 
 
 def _run_athena(sql: str) -> List[Dict[str, Any]]:
-    database = os.environ.get("ATHENA_DATABASE", "calcofi_db")
+    database = os.environ.get("ATHENA_DATABASE", "default")
     workgroup = os.environ.get("ATHENA_WORKGROUP", "primary")
     output = os.environ.get("ATHENA_OUTPUT_LOCATION", "").strip()
 
