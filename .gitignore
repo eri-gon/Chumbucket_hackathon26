@@ -43,10 +43,10 @@ env/
 cdk.out/
 *.zip
 
-# AWS credentials (CRITICAL)
+# AWS credentials (CRITICAL). Root-only names so frontend/src/config/ is not ignored.
 .aws/
-credentials
-config
+/credentials
+/config
 
 # ----------------------------
 # Testing / coverage
