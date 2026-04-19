@@ -74,6 +74,41 @@ npm ci
 npm run dev
 ```
 
+## GitHub Pages (frontend only)
+
+Host the Vite app from the [`frontend/`](../frontend/) directory on [GitHub Pages](https://pages.github.com/) without relying on pushes to the **default branch** (`master` on [eri-gon/Chumbucket_hackathon26](https://github.com/eri-gon/Chumbucket_hackathon26)). The workflow [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml) runs on:
+
+- **`workflow_dispatch`** — in GitHub: **Actions → Deploy GitHub Pages → Run workflow**, and pick the branch that contains the workflow and current frontend (e.g. a long-lived `pages` branch).
+- **`push` to branch `pages` only** — optional auto-deploy when you commit to `pages`; it does **not** run on `master`.
+
+### Repository settings (GitHub UI)
+
+1. **Settings → Pages → Build and deployment**: set **Source** to **GitHub Actions** (not “Deploy from a branch” for the old `gh-pages` flow).
+2. **Settings → Secrets and variables → Actions → Variables** (repository variables):
+   - **`VITE_API_URL`** — same value as local `frontend/.env`: API Gateway stage base, e.g. `https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com/Prod` (no `/query` suffix; see [`frontend/src/services/api.ts`](../frontend/src/services/api.ts)).
+   - **`VITE_BASE`** (optional) — leave unset to use **`/<repository-name>/`** for a project site. Set to **`/`** only if you publish a **user/org** site at the domain root.
+
+### Project site URL shape
+
+For this repo, the published app is:
+
+`https://eri-gon.github.io/Chumbucket_hackathon26/`
+
+[`frontend/vite.config.ts`](../frontend/vite.config.ts) sets `base` from **`VITE_BASE`** at build time (CI injects it). [`frontend/index.html`](../frontend/index.html) asset URLs are resolved relative to that base.
+
+### Workflow without merging to `master`
+
+1. Create branch **`pages`** from your current work (or any branch that already has `.github/workflows/deploy-pages.yml` and the `frontend/` tree you want live).
+2. Push **`pages`** to GitHub (this does not change `master`).
+3. Either push new commits to **`pages`** to trigger a deploy, or use **Run workflow** and select **`pages`** so Actions checks out that ref.
+
+### Verification checklist
+
+After a successful run:
+
+1. Open the Pages URL above; confirm the shell loads (no blank page — wrong `VITE_BASE` usually breaks JS/CSS paths).
+2. Open devtools **Network**, run **Query**; confirm `POST …/query` hits your API and CORS succeeds (Lambda returns `Access-Control-Allow-Origin: *` for the demo).
+
 ## Data: seed S3 and register Athena
 
 1. Use bucket **`your-calcofi-bucket`** (or set `DATA_S3_BUCKET` to the bucket name that matches your Glue `LOCATION`).

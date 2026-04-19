@@ -1,0 +1,58 @@
+# Build frontend with VITE_BASE + VITE_API_URL, deploy static site to GitHub Pages.
+# Does NOT run on pushes to the default branch (e.g. master): use workflow_dispatch and/or branch `pages` only.
+# Repo: Settings → Pages → Source: GitHub Actions.
+# Variables: VITE_API_URL (required for live API). Optional VITE_BASE (default /{repo}/).
+
+name: Deploy GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - pages
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and build
+        working-directory: frontend
+        env:
+          # Project page default: https://<owner>.github.io/<repo>/
+          # Override with repo Variable VITE_BASE=/ for a user/org site at domain root.
+          VITE_BASE: ${{ vars.VITE_BASE || format('/{0}/', github.event.repository.name) }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
