@@ -2,8 +2,12 @@
 CLAUDE.md
 .claude/
 
+# AWS credentials
+.aws/
+
 # Data
 data/
+*.csv
 
 # Python
 __pycache__/

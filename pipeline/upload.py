@@ -14,7 +14,7 @@ FILES = [
 ]
 
 
-def load_credentials(csv_path="datahacks-2026_accessKeys.csv"):
+def load_credentials(csv_path=".aws/credentials.csv"):
     df = pd.read_csv(csv_path)
     key_id = df.iloc[0, 0].strip()
     secret  = df.iloc[0, 1].strip()
