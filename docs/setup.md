@@ -78,15 +78,15 @@ npm run dev
 
 Host the Vite app from the [`frontend/`](../frontend/) directory on [GitHub Pages](https://pages.github.com/) without relying on pushes to the **default branch** (`master` on [eri-gon/Chumbucket_hackathon26](https://github.com/eri-gon/Chumbucket_hackathon26)). The workflow [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml) runs on:
 
-- **`workflow_dispatch`** — in GitHub: **Actions → Deploy GitHub Pages → Run workflow**, and pick the branch that contains the workflow and current frontend (e.g. a long-lived `pages` branch).
+- **`workflow_dispatch`** — in GitHub: **Actions → Deploy to GitHub Pages → Run workflow**, and pick the branch that contains the workflow and current frontend (e.g. a long-lived `pages` branch).
 - **`push` to branch `pages` only** — optional auto-deploy when you commit to `pages`; it does **not** run on `master`.
 
 ### Repository settings (GitHub UI)
 
 1. **Settings → Pages → Build and deployment**: set **Source** to **GitHub Actions** (not “Deploy from a branch” for the old `gh-pages` flow).
-2. **Settings → Secrets and variables → Actions → Variables** (repository variables):
-   - **`VITE_API_URL`** — same value as local `frontend/.env`: API Gateway stage base, e.g. `https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com/Prod` (no `/query` suffix; see [`frontend/src/services/api.ts`](../frontend/src/services/api.ts)).
-   - **`VITE_BASE`** (optional) — leave unset to use **`/<repository-name>/`** for a project site. Set to **`/`** only if you publish a **user/org** site at the domain root.
+2. **Settings → Secrets and variables → Actions**:
+   - **Secret `VITE_API_URL`** — same value as local `frontend/.env`: API Gateway stage base, e.g. `https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com/Prod` (no `/query` suffix; see [`frontend/src/services/api.ts`](../frontend/src/services/api.ts)). The workflow reads this at build time via `${{ secrets.VITE_API_URL }}`.
+   - **Variable `VITE_BASE`** (optional) — leave unset to use **`/<repository-name>/`** for a project site. Set to **`/`** only if you publish a **user/org** site at the domain root.
 
 ### Project site URL shape
 
