@@ -87,6 +87,15 @@ Host the Vite app from the [`frontend/`](../frontend/) directory on [GitHub Page
 2. **Settings → Secrets and variables → Actions**:
    - **Secret `VITE_API_URL`** — same value as local `frontend/.env`: API Gateway stage base, e.g. `https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com/Prod` (no `/query` suffix; see [`frontend/src/services/api.ts`](../frontend/src/services/api.ts)). The workflow reads this at build time via `${{ secrets.VITE_API_URL }}`.
    - **Variable `VITE_BASE`** (optional) — leave unset to use **`/<repository-name>/`** for a project site. Set to **`/`** only if you publish a **user/org** site at the domain root.
+3. **Settings → Environments → `github-pages`** — the **deploy** job in [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml) targets this environment. Under **Deployment branches and tags**, allow the branch you publish from (this repo uses **`pages`**). If only `main` / `master` is allowed, deploy fails with *Branch "pages" is not allowed to deploy to github-pages due to environment protection rules*. Fix: add **`pages`** under **Selected branches**, or use **All branches** only if your org policy allows it. If **Required reviewers** or a **Wait timer** is set on `github-pages`, approve the pending deployment or relax those rules so the deploy job can finish.
+
+### Troubleshooting: Pages deploy blocked by environment
+
+Symptoms: **build** succeeds; **deploy** fails with *Branch "pages" is not allowed to deploy to github-pages* or *The deployment was rejected or didn't satisfy other protection rules*.
+
+1. **Deployment branches** — **Settings → Environments → `github-pages`**. Ensure **`pages`** is allowed (see step 3 above). Org-owned repos may need an org owner to change environment rules.
+2. **Reviewers / wait timer** — Same environment page: remove or satisfy **Required reviewers**; check **Actions** for a deployment waiting on approval.
+3. **Re-run** — After fixing rules: **Actions** → failed workflow → **Re-run failed jobs**, or push a new commit to **`pages`**.
 
 ### Project site URL shape
 
